@@ -1166,7 +1166,7 @@ export default function GardenManager() {
       <main className="flex-1 container px-4 py-6 max-w-4xl">
         <AnimatePresence mode="wait">
           <motion.div
-            key={section + (selectedCulture?.id || '') + (selectedArticle?.id || '') + (selectedDisease?.id || '') + (selectedPest?.id || '')}
+            key={section + (selectedCulture?.id || '') + (selectedArticle?.id || '')}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
