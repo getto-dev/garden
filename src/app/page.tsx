@@ -274,7 +274,7 @@ export default function GardenManager() {
     <div className="space-y-6">
       {/* Приветствие */}
       <div className="text-center py-8">
-        <h1 className="text-3xl font-bold text-primary mb-2">🌱 Садовый менеджер</h1>
+        <h1 className="text-3xl font-bold text-primary mb-2">🌱 Садовод</h1>
         <p className="text-muted-foreground">Ваш справочник по уходу за садом и огородом</p>
       </div>
 
@@ -1135,7 +1135,7 @@ export default function GardenManager() {
               className="flex items-center gap-2 font-bold text-primary"
             >
               <span className="text-xl">🌱</span>
-              <span className="hidden sm:inline">Садовый менеджер</span>
+              <span className="hidden sm:inline">Садовод</span>
             </button>
           </div>
 
@@ -1180,7 +1180,7 @@ export default function GardenManager() {
       {/* Footer */}
       <footer className="mt-auto border-t bg-muted/30">
         <div className="container px-4 py-4 text-center text-sm text-muted-foreground">
-          <p>🌱 Садовый менеджер — справочник садовода</p>
+          <p>🌱 Садовод — справочник садовода</p>
         </div>
       </footer>
 

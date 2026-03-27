@@ -22,15 +22,17 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Садовый менеджер - Справочник садовода",
-    template: "%s | Садовый менеджер",
+    default: "Садовод - Справочник садовода",
+    template: "%s | Садовод",
   },
   description: "Полный справочник садовода: лунный посевной календарь, каталог культур, уход за растениями, борьба с вредителями и болезнями",
   keywords: ["сад", "огород", "лунный календарь", "посадка", "уход", "вредители", "болезни", "растения"],
-  authors: [{ name: "Садовый менеджер" }],
+  authors: [{ name: "Садовод" }],
   manifest: "/manifest.json",
   icons: {
     icon: [
+      { url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-72x72.png", sizes: "72x72", type: "image/png" },
       { url: "/icons/icon-96x96.png", sizes: "96x96", type: "image/png" },
       { url: "/icons/icon-128x128.png", sizes: "128x128", type: "image/png" },
@@ -38,6 +40,7 @@ export const metadata: Metadata = {
       { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
       { url: "/icons/icon-152x152.png", sizes: "152x152", type: "image/png" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
@@ -45,20 +48,20 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Садовый менеджер",
+    title: "Садовод",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: "website",
-    siteName: "Садовый менеджер",
-    title: "Садовый менеджер - Справочник садовода",
+    siteName: "Садовод",
+    title: "Садовод - Справочник садовода",
     description: "Лунный календарь, каталог культур, уход за растениями",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Садовый менеджер",
+    title: "Садовод",
     description: "Справочник садовода с лунным календарём",
   },
 };
@@ -71,7 +74,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="mobile-web-app-capable" content="yes" />
