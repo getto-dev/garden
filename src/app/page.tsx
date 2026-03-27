@@ -19,17 +19,33 @@ import {
   Sprout,
   Shovel,
   Apple,
-  Search
+  Search,
+  Settings,
+  Monitor,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTheme } from 'next-themes';
 import type { Section } from '@/lib/types';
+import {
+  categories,
+  cultures,
+  articles,
+  diseases,
+  pests,
+  MONTHS,
+  MOON_PHASES,
+  generateCalendarMonth,
+  getCultureBySlug,
+  getArticleBySlug,
+  getDiseaseBySlug,
+  getPestBySlug
+} from '@/lib/data';
 
 // Типы данных
 interface Category {
@@ -39,7 +55,6 @@ interface Category {
   icon: string;
   description: string | null;
   order: number;
-  _count?: { cultures: number };
 }
 
 interface Culture {
@@ -48,7 +63,6 @@ interface Culture {
   slug: string;
   categoryId: string;
   category?: Category;
-  image: string | null;
   description: string | null;
   history: string | null;
   plantingTime: string | null;
@@ -59,8 +73,6 @@ interface Culture {
   storage: string | null;
   goodNeighbors: string | null;
   badNeighbors: string | null;
-  diseases?: Disease[];
-  pests?: Pest[];
 }
 
 interface Article {
@@ -68,10 +80,8 @@ interface Article {
   title: string;
   slug: string;
   category: string;
-  image: string | null;
   excerpt: string | null;
   content: string;
-  tableOfContents: string | null;
   tags: string | null;
 }
 
@@ -80,30 +90,25 @@ interface Disease {
   name: string;
   slug: string;
   type: string;
-  image: string | null;
   description: string | null;
   symptoms: string | null;
   causes: string | null;
   treatment: string | null;
   prevention: string | null;
-  _count?: { cultures: number };
 }
 
 interface Pest {
   id: string;
   name: string;
   slug: string;
-  image: string | null;
   description: string | null;
   damage: string | null;
   signs: string | null;
   control: string | null;
   prevention: string | null;
-  _count?: { cultures: number };
 }
 
 interface MoonDay {
-  id: string;
   date: string;
   year: number;
   month: number;
@@ -122,26 +127,11 @@ interface MoonDay {
   isGoodForHarvesting: boolean;
   isGoodForSoilWork: boolean;
   isForbidden: boolean;
-  recommendation: string | null;
+  recommendation: string;
 }
 
-// Названия месяцев
-const MONTHS = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-];
-
-// Фазы луны эмодзи
-const MOON_PHASES: Record<string, string> = {
-  new: '🌑',
-  waxing_crescent: '🌒',
-  first_quarter: '🌓',
-  waxing_gibbous: '🌔',
-  full: '🌕',
-  waning_gibbous: '🌖',
-  last_quarter: '🌗',
-  waning_crescent: '🌘'
-};
+// Версия приложения
+const APP_VERSION = '1.0.0';
 
 export default function GardenManager() {
   // Состояние навигации
@@ -152,111 +142,28 @@ export default function GardenManager() {
   const [selectedPest, setSelectedPest] = useState<Pest | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Данные
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [cultures, setCultures] = useState<Culture[]>([]);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [diseases, setDiseases] = useState<Disease[]>([]);
-  const [pests, setPests] = useState<Pest[]>([]);
-  const [calendarMonth, setCalendarMonth] = useState<MoonDay[]>([]);
-  
   // UI состояние
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [menuOpen, setMenuOpen] = useState(false);
-
-  // Загрузка данных при монтировании
+  const [mounted, setMounted] = useState(false);
+  
+  // Theme
+  const { theme, setTheme } = useTheme();
+  
+  // Календарь на текущий месяц
+  const [calendarMonth, setCalendarMonth] = useState<MoonDay[]>([]);
+  
+  // Mounted state для hydration
   useEffect(() => {
-    loadInitialData();
-    loadCalendarMonth(currentYear, currentMonth);
+    setMounted(true);
   }, []);
 
-  // Загрузка календаря при смене месяца
+  // Генерация календаря при смене месяца
   useEffect(() => {
-    loadCalendarMonth(currentYear, currentMonth);
+    setCalendarMonth(generateCalendarMonth(currentYear, currentMonth));
   }, [currentYear, currentMonth]);
-
-  const loadInitialData = async () => {
-    try {
-      const [catRes, cultRes, artRes, disRes, pestRes] = await Promise.all([
-        fetch('/api/categories'),
-        fetch('/api/cultures'),
-        fetch('/api/articles'),
-        fetch('/api/diseases'),
-        fetch('/api/pests')
-      ]);
-
-      const [catData, cultData, artData, disData, pestData] = await Promise.all([
-        catRes.json(),
-        cultRes.json(),
-        artRes.json(),
-        disRes.json(),
-        pestRes.json()
-      ]);
-
-      setCategories(catData);
-      setCultures(cultData);
-      setArticles(artData);
-      setDiseases(disData);
-      setPests(pestData);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadCalendarMonth = async (year: number, month: number) => {
-    try {
-      const res = await fetch(`/api/calendar?year=${year}&month=${month}`);
-      const data = await res.json();
-      setCalendarMonth(data);
-    } catch (error) {
-      console.error('Error loading calendar:', error);
-    }
-  };
-
-  const loadCulture = async (slug: string) => {
-    try {
-      const res = await fetch(`/api/cultures?slug=${slug}`);
-      const data = await res.json();
-      setSelectedCulture(data);
-    } catch (error) {
-      console.error('Error loading culture:', error);
-    }
-  };
-
-  const loadArticle = async (slug: string) => {
-    try {
-      const res = await fetch(`/api/articles?slug=${slug}`);
-      const data = await res.json();
-      setSelectedArticle(data);
-    } catch (error) {
-      console.error('Error loading article:', error);
-    }
-  };
-
-  const loadDisease = async (slug: string) => {
-    try {
-      const res = await fetch(`/api/diseases?slug=${slug}`);
-      const data = await res.json();
-      setSelectedDisease(data);
-    } catch (error) {
-      console.error('Error loading disease:', error);
-    }
-  };
-
-  const loadPest = async (slug: string) => {
-    try {
-      const res = await fetch(`/api/pests?slug=${slug}`);
-      const data = await res.json();
-      setSelectedPest(data);
-    } catch (error) {
-      console.error('Error loading pest:', error);
-    }
-  };
 
   // Фильтрация культур по поиску
   const filteredCultures = cultures.filter(c => 
@@ -266,7 +173,7 @@ export default function GardenManager() {
 
   // Фильтрация культур по категории
   const culturesByCategory = selectedCategory 
-    ? filteredCultures.filter(c => c.category?.slug === selectedCategory)
+    ? filteredCultures.filter(c => c.categoryId === categories.find(cat => cat.slug === selectedCategory)?.id)
     : filteredCultures;
 
   // Парсинг markdown содержания статьи
@@ -291,7 +198,7 @@ export default function GardenManager() {
       } else if (line.match(/^\d\./)) {
         return <li key={index} className="ml-4 my-1 list-decimal">{line.slice(3)}</li>;
       } else if (line.startsWith('| ')) {
-        return null; // Skip table rows for simplicity
+        return null;
       } else if (line.trim() === '---') {
         return <hr key={index} className="my-4 border-border" />;
       } else if (line.trim()) {
@@ -396,6 +303,14 @@ export default function GardenManager() {
         <Bug className="h-5 w-5" />
         Вредители
       </Button>
+      <Button
+        variant={section === 'settings' ? 'default' : 'ghost'}
+        className={`justify-start gap-3 ${mobile ? 'w-full' : ''}`}
+        onClick={() => navigate('settings')}
+      >
+        <Settings className="h-5 w-5" />
+        Настройки
+      </Button>
     </nav>
   );
 
@@ -492,25 +407,26 @@ export default function GardenManager() {
       <div>
         <h2 className="text-xl font-bold mb-4">Категории культур</h2>
         <div className="grid grid-cols-2 gap-4">
-          {categories.map(cat => (
-            <Card 
-              key={cat.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => { setSelectedCategory(cat.slug); setSection('catalog'); }}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{cat.icon}</span>
-                  <div>
-                    <h3 className="font-semibold">{cat.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {cat._count?.cultures || 0} культур
-                    </p>
+          {categories.map(cat => {
+            const count = cultures.filter(c => c.categoryId === cat.id).length;
+            return (
+              <Card 
+                key={cat.id}
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => { setSelectedCategory(cat.slug); setSection('catalog'); }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{cat.icon}</span>
+                    <div>
+                      <h3 className="font-semibold">{cat.name}</h3>
+                      <p className="text-sm text-muted-foreground">{count} культур</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
 
@@ -522,7 +438,7 @@ export default function GardenManager() {
             <Card 
               key={article.id}
               className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => { loadArticle(article.slug); setSection('article'); }}
+              onClick={() => setSelectedArticle(article)}
             >
               <CardContent className="p-4">
                 <h3 className="font-semibold">{article.title}</h3>
@@ -610,7 +526,7 @@ export default function GardenManager() {
               const isToday = day.date === today;
               return (
                 <div
-                  key={day.id}
+                  key={day.date}
                   className={`aspect-square p-1 rounded-lg text-center cursor-pointer transition-colors
                     ${isToday ? 'ring-2 ring-primary bg-primary/10' : ''}
                     ${day.isForbidden ? 'bg-destructive/20' : ''}
@@ -738,41 +654,42 @@ export default function GardenManager() {
 
           {/* Список культур */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {culturesByCategory.map(culture => (
-              <Card
-                key={culture.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => loadCulture(culture.slug)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">
-                      {culture.category?.icon || '🌱'}
+            {culturesByCategory.map(culture => {
+              const cat = categories.find(c => c.id === culture.categoryId);
+              return (
+                <Card
+                  key={culture.id}
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => setSelectedCulture(getCultureBySlug(culture.slug) as Culture)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">
+                        {cat?.icon || '🌱'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">{culture.name}</h3>
+                        <p className="text-xs text-muted-foreground">{cat?.name}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{culture.name}</h3>
-                      <p className="text-xs text-muted-foreground">{culture.category?.name}</p>
-                    </div>
-                  </div>
-                  {culture.description && (
-                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                      {culture.description}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    {culture.description && (
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                        {culture.description}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </>
       ) : selectedCulture ? (
-        // Детальная страница культуры
         <CultureDetail culture={selectedCulture} onBack={goBack} />
       ) : (
-        // Выбрана категория
         <CategoryDetail 
           category={categories.find(c => c.slug === selectedCategory)!}
           cultures={culturesByCategory}
-          onSelectCulture={loadCulture}
+          onSelectCulture={(slug) => setSelectedCulture(getCultureBySlug(slug) as Culture)}
           onBack={goBack}
         />
       )}
@@ -780,143 +697,105 @@ export default function GardenManager() {
   );
 
   // Детальная страница культуры
-  const CultureDetail = ({ culture, onBack }: { culture: Culture; onBack: () => void }) => (
-    <div className="space-y-4">
-      <Button variant="ghost" onClick={onBack} className="mb-2">
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Назад
-      </Button>
+  const CultureDetail = ({ culture, onBack }: { culture: Culture; onBack: () => void }) => {
+    const cat = categories.find(c => c.id === culture.categoryId);
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" onClick={onBack} className="mb-2">
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Назад
+        </Button>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">{culture.category?.icon || '🌱'}</span>
-            <div>
-              <CardTitle className="text-2xl">{culture.name}</CardTitle>
-              <CardDescription>{culture.category?.name}</CardDescription>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">{cat?.icon || '🌱'}</span>
+              <div>
+                <CardTitle className="text-2xl">{culture.name}</CardTitle>
+                <CardDescription>{cat?.name}</CardDescription>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        {culture.description && (
-          <CardContent>
-            <p className="text-muted-foreground">{culture.description}</p>
-          </CardContent>
-        )}
-      </Card>
-
-      <Accordion type="multiple" className="w-full">
-        {culture.history && (
-          <AccordionItem value="history">
-            <AccordionTrigger>📜 История</AccordionTrigger>
-            <AccordionContent>{culture.history}</AccordionContent>
-          </AccordionItem>
-        )}
-
-        {culture.plantingTime && (
-          <AccordionItem value="planting">
-            <AccordionTrigger>🌱 Когда сажать</AccordionTrigger>
-            <AccordionContent>{culture.plantingTime}</AccordionContent>
-          </AccordionItem>
-        )}
-
-        {culture.careTips && (
-          <AccordionItem value="care">
-            <AccordionTrigger>💚 Уход</AccordionTrigger>
-            <AccordionContent>{culture.careTips}</AccordionContent>
-          </AccordionItem>
-        )}
-
-        {culture.watering && (
-          <AccordionItem value="watering">
-            <AccordionTrigger>💧 Полив</AccordionTrigger>
-            <AccordionContent>{culture.watering}</AccordionContent>
-          </AccordionItem>
-        )}
-
-        {culture.fertilizing && (
-          <AccordionItem value="fertilizing">
-            <AccordionTrigger>🧪 Удобрение</AccordionTrigger>
-            <AccordionContent>{culture.fertilizing}</AccordionContent>
-          </AccordionItem>
-        )}
-
-        {culture.harvesting && (
-          <AccordionItem value="harvesting">
-            <AccordionTrigger>🧺 Сбор урожая</AccordionTrigger>
-            <AccordionContent>{culture.harvesting}</AccordionContent>
-          </AccordionItem>
-        )}
-
-        {culture.storage && (
-          <AccordionItem value="storage">
-            <AccordionTrigger>🏠 Хранение</AccordionTrigger>
-            <AccordionContent>{culture.storage}</AccordionContent>
-          </AccordionItem>
-        )}
-
-        {(culture.goodNeighbors || culture.badNeighbors) && (
-          <AccordionItem value="neighbors">
-            <AccordionTrigger>🌿 Совместимость</AccordionTrigger>
-            <AccordionContent>
-              {culture.goodNeighbors && (
-                <div className="mb-2">
-                  <p className="font-semibold text-primary">✅ Хорошие соседи:</p>
-                  <p>{culture.goodNeighbors}</p>
-                </div>
-              )}
-              {culture.badNeighbors && (
-                <div>
-                  <p className="font-semibold text-destructive">❌ Плохие соседи:</p>
-                  <p>{culture.badNeighbors}</p>
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        )}
-      </Accordion>
-
-      {/* Болезни */}
-      {culture.diseases && culture.diseases.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Болезни</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {culture.diseases.map(d => (
-              <div
-                key={d.id}
-                className="p-2 rounded-lg bg-muted cursor-pointer hover:bg-accent"
-                onClick={() => { loadDisease(d.slug); setSection('diseases'); }}
-              >
-                <p className="font-medium">{d.name}</p>
-                <p className="text-xs text-muted-foreground">{d.type}</p>
-              </div>
-            ))}
-          </CardContent>
+          {culture.description && (
+            <CardContent>
+              <p className="text-muted-foreground">{culture.description}</p>
+            </CardContent>
+          )}
         </Card>
-      )}
 
-      {/* Вредители */}
-      {culture.pests && culture.pests.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Вредители</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {culture.pests.map(p => (
-              <div
-                key={p.id}
-                className="p-2 rounded-lg bg-muted cursor-pointer hover:bg-accent"
-                onClick={() => { loadPest(p.slug); setSection('pests'); }}
-              >
-                <p className="font-medium">{p.name}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+        <Accordion type="multiple" className="w-full">
+          {culture.history && (
+            <AccordionItem value="history">
+              <AccordionTrigger>📜 История</AccordionTrigger>
+              <AccordionContent>{culture.history}</AccordionContent>
+            </AccordionItem>
+          )}
+
+          {culture.plantingTime && (
+            <AccordionItem value="planting">
+              <AccordionTrigger>🌱 Когда сажать</AccordionTrigger>
+              <AccordionContent>{culture.plantingTime}</AccordionContent>
+            </AccordionItem>
+          )}
+
+          {culture.careTips && (
+            <AccordionItem value="care">
+              <AccordionTrigger>💚 Уход</AccordionTrigger>
+              <AccordionContent>{culture.careTips}</AccordionContent>
+            </AccordionItem>
+          )}
+
+          {culture.watering && (
+            <AccordionItem value="watering">
+              <AccordionTrigger>💧 Полив</AccordionTrigger>
+              <AccordionContent>{culture.watering}</AccordionContent>
+            </AccordionItem>
+          )}
+
+          {culture.fertilizing && (
+            <AccordionItem value="fertilizing">
+              <AccordionTrigger>🧪 Удобрение</AccordionTrigger>
+              <AccordionContent>{culture.fertilizing}</AccordionContent>
+            </AccordionItem>
+          )}
+
+          {culture.harvesting && (
+            <AccordionItem value="harvesting">
+              <AccordionTrigger>🧺 Сбор урожая</AccordionTrigger>
+              <AccordionContent>{culture.harvesting}</AccordionContent>
+            </AccordionItem>
+          )}
+
+          {culture.storage && (
+            <AccordionItem value="storage">
+              <AccordionTrigger>🏠 Хранение</AccordionTrigger>
+              <AccordionContent>{culture.storage}</AccordionContent>
+            </AccordionItem>
+          )}
+
+          {(culture.goodNeighbors || culture.badNeighbors) && (
+            <AccordionItem value="neighbors">
+              <AccordionTrigger>🌿 Совместимость</AccordionTrigger>
+              <AccordionContent>
+                {culture.goodNeighbors && (
+                  <div className="mb-2">
+                    <p className="font-semibold text-primary">✅ Хорошие соседи:</p>
+                    <p>{culture.goodNeighbors}</p>
+                  </div>
+                )}
+                {culture.badNeighbors && (
+                  <div>
+                    <p className="font-semibold text-destructive">❌ Плохие соседи:</p>
+                    <p>{culture.badNeighbors}</p>
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          )}
+        </Accordion>
+      </div>
+    );
+  };
 
   // Детальная страница категории
   const CategoryDetail = ({ category, cultures, onSelectCulture, onBack }: {
@@ -977,7 +856,7 @@ export default function GardenManager() {
               <Card
                 key={article.id}
                 className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => loadArticle(article.slug)}
+                onClick={() => setSelectedArticle(article)}
               >
                 <CardHeader>
                   <CardTitle className="text-lg">{article.title}</CardTitle>
@@ -1074,7 +953,7 @@ export default function GardenManager() {
               <Card
                 key={disease.id}
                 className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => loadDisease(disease.slug)}
+                onClick={() => setSelectedDisease(disease)}
               >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">{disease.name}</CardTitle>
@@ -1160,7 +1039,7 @@ export default function GardenManager() {
               <Card
                 key={pest.id}
                 className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => loadPest(pest.slug)}
+                onClick={() => setSelectedPest(pest)}
               >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">{pest.name}</CardTitle>
@@ -1227,18 +1106,134 @@ export default function GardenManager() {
     </div>
   );
 
+  // Страница настроек
+  const SettingsPage = () => (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold flex items-center gap-2">
+        <Settings className="h-6 w-6" />
+        Настройки
+      </h1>
+
+      {/* Тема */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            {mounted && theme === 'dark' ? <Moon className="h-5 w-5" /> : 
+             mounted && theme === 'light' ? <Sun className="h-5 w-5" /> : 
+             <Monitor className="h-5 w-5" />}
+            Тема оформления
+          </CardTitle>
+          <CardDescription>Выберите предпочитаемую тему</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant={theme === 'light' ? 'default' : 'outline'}
+              className="flex flex-col gap-1 h-auto py-3"
+              onClick={() => setTheme('light')}
+            >
+              <Sun className="h-5 w-5" />
+              <span className="text-xs">Светлая</span>
+            </Button>
+            <Button
+              variant={theme === 'dark' ? 'default' : 'outline'}
+              className="flex flex-col gap-1 h-auto py-3"
+              onClick={() => setTheme('dark')}
+            >
+              <Moon className="h-5 w-5" />
+              <span className="text-xs">Тёмная</span>
+            </Button>
+            <Button
+              variant={theme === 'system' ? 'default' : 'outline'}
+              className="flex flex-col gap-1 h-auto py-3"
+              onClick={() => setTheme('system')}
+            >
+              <Monitor className="h-5 w-5" />
+              <span className="text-xs">Авто</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Разработчик */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Разработчик</CardTitle>
+          <CardDescription>Связаться с разработчиком</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <a
+            href="https://t.me/gettocode"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-3 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">👨‍💻</span>
+              <div>
+                <p className="font-semibold">@gettocode</p>
+                <p className="text-sm text-muted-foreground">Telegram</p>
+              </div>
+            </div>
+            <ExternalLink className="h-5 w-5 text-muted-foreground" />
+          </a>
+        </CardContent>
+      </Card>
+
+      {/* О приложении */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">О приложении</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex justify-between items-center py-2 border-b">
+            <span className="text-muted-foreground">Версия</span>
+            <Badge variant="secondary">{APP_VERSION}</Badge>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b">
+            <span className="text-muted-foreground">Платформа</span>
+            <span className="font-medium">PWA</span>
+          </div>
+          <div className="flex justify-between items-center py-2">
+            <span className="text-muted-foreground">Язык</span>
+            <span className="font-medium">Русский</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Возможности */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Возможности</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li className="flex items-center gap-2">
+              <span className="text-primary">✓</span> Лунный посевной календарь
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-primary">✓</span> Каталог культур с описанием
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-primary">✓</span> Обучающие статьи
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-primary">✓</span> Справочник болезней
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-primary">✓</span> Справочник вредителей
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-primary">✓</span> Работает офлайн
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   // Рендер контента
   const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="space-y-4 p-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
-      );
-    }
-
     switch (section) {
       case 'home':
         return <HomePage />;
@@ -1252,6 +1247,8 @@ export default function GardenManager() {
         return <DiseasesPage />;
       case 'pests':
         return <PestsPage />;
+      case 'settings':
+        return <SettingsPage />;
       default:
         return <HomePage />;
     }
@@ -1365,6 +1362,15 @@ export default function GardenManager() {
           >
             <BookOpen className="h-5 w-5" />
             <span className="text-xs">Статьи</span>
+          </Button>
+          <Button
+            variant={section === 'settings' ? 'default' : 'ghost'}
+            size="sm"
+            className="flex-col gap-1 h-auto py-2 px-3"
+            onClick={() => navigate('settings')}
+          >
+            <Settings className="h-5 w-5" />
+            <span className="text-xs">Ещё</span>
           </Button>
         </div>
       </nav>

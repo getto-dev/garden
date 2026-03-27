@@ -95,4 +95,4 @@ export interface TableOfContentsItem {
 }
 
 // Навигационные разделы
-export type Section = 'home' | 'calendar' | 'catalog' | 'articles' | 'diseases' | 'pests' | 'culture' | 'article';
+export type Section = 'home' | 'calendar' | 'catalog' | 'articles' | 'diseases' | 'pests' | 'culture' | 'article' | 'settings';
