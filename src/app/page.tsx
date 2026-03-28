@@ -21,7 +21,8 @@ import {
   Settings,
   Monitor,
   ExternalLink,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,7 +106,7 @@ interface MoonDay {
 
 export default function GardenManager() {
   // PWA functionality
-  const { isInstalled, isStandalone, needsUpdate, applyUpdate, checkForUpdates } = usePWA();
+  const { isInstalled, isStandalone, canInstall, install, needsUpdate, applyUpdate, checkForUpdates } = usePWA();
   
   // Состояние навигации
   const [section, setSection] = useState<Section>('home');
@@ -1013,6 +1014,18 @@ export default function GardenManager() {
                 </div>
               </div>
             ) : null}
+
+            {/* Кнопка установки */}
+            {canInstall && (
+              <Button
+                onClick={install}
+                variant="default"
+                className="w-full gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Установить приложение
+              </Button>
+            )}
 
             {/* Кнопка обновления */}
             {needsUpdate && (
