@@ -969,7 +969,7 @@ export default function GardenManager() {
           </CardHeader>
           <CardContent>
             <a
-              href="https://t.me/gettocode"
+              href="tg://resolve?domain=gettocode"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between p-3 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
@@ -977,8 +977,7 @@ export default function GardenManager() {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">👨‍💻</span>
                 <div>
-                  <p className="font-semibold">@gettocode</p>
-                  <p className="text-sm text-muted-foreground">Telegram</p>
+                  <p className="font-semibold">Telegram</p>                  
                 </div>
               </div>
               <ExternalLink className="h-5 w-5 text-muted-foreground" />
