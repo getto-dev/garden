@@ -44,3 +44,6 @@ server.log
 # Misc
 .cache/
 *.tgz
+
+# TypeScript build info
+*.tsbuildinfo

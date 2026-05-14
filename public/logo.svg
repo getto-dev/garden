@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="64" fill="#16a34a"/>
-  <g transform="translate(56, 56) scale(0.78)">
-    <path fill="#fff" d="M256 0c-17.7 0-32 14.3-32 32v10.4C156.5 53.3 96 114.7 96 192c0 70.7 51.3 129.3 118.7 140.5V384H128v64h256v-64h-86.7v-51.5C374.7 321.3 416 258.2 416 192c0-88.4-71.6-160-160-160zm0 256c-70.7 0-128-57.3-128-128S185.3 0 256 0s128 57.3 128 128-57.3 128-128 128z"/>
-    <text x="256" y="280" text-anchor="middle" font-size="200" fill="#fff">🌱</text>
-  </g>
-</svg>
