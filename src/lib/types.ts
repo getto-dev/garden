@@ -37,27 +37,5 @@ export interface Article {
   tags: string | null;
 }
 
-export interface MoonDay {
-  date: string;
-  year: number;
-  month: number;
-  day: number;
-  moonPhase: string;
-  moonPhaseName: string;
-  moonDay: number;
-  zodiacSign: string;
-  zodiacElement: string;
-  isGoodForSowing: boolean;
-  isGoodForPlanting: boolean;
-  isGoodForTransplanting: boolean;
-  isGoodForWatering: boolean;
-  isGoodForFertilizing: boolean;
-  isGoodForPruning: boolean;
-  isGoodForHarvesting: boolean;
-  isGoodForSoilWork: boolean;
-  isForbidden: boolean;
-  recommendation: string;
-}
-
 // Навигационные разделы
-export type Section = 'home' | 'calendar' | 'catalog' | 'articles' | 'settings';
+export type Section = 'home' | 'catalog' | 'articles' | 'settings';

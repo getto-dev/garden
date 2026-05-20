@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
-  Calendar, 
   BookOpen, 
   Leaf,
   Menu,
@@ -12,17 +11,14 @@ import {
   ChevronLeft,
   Sun,
   Moon,
-  Droplets,
-  Scissors,
-  Sprout,
-  Shovel,
-  Apple,
   Search,
   Settings,
   Monitor,
   ExternalLink,
   RefreshCw,
-  Download
+  Download,
+  MessageCircle,
+  FlaskConical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,9 +32,6 @@ import {
   categories,
   cultures,
   articles,
-  MONTHS,
-  MOON_PHASES,
-  generateCalendarMonth,
   getCultureBySlug
 } from '@/lib/data';
 import { APP_VERSION } from '@/lib/constants';
@@ -82,28 +75,6 @@ interface Article {
   tags: string | null;
 }
 
-interface MoonDay {
-  date: string;
-  year: number;
-  month: number;
-  day: number;
-  moonPhase: string;
-  moonPhaseName: string;
-  moonDay: number;
-  zodiacSign: string;
-  zodiacElement: string;
-  isGoodForSowing: boolean;
-  isGoodForPlanting: boolean;
-  isGoodForTransplanting: boolean;
-  isGoodForWatering: boolean;
-  isGoodForFertilizing: boolean;
-  isGoodForPruning: boolean;
-  isGoodForHarvesting: boolean;
-  isGoodForSoilWork: boolean;
-  isForbidden: boolean;
-  recommendation: string;
-}
-
 export default function GardenManager() {
   // PWA functionality
   const { isInstalled, isStandalone, canInstall, install, needsUpdate, applyUpdate, checkForUpdates } = usePWA();
@@ -116,26 +87,16 @@ export default function GardenManager() {
   
   // UI состояние
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   
   // Theme
   const { theme, setTheme } = useTheme();
   
-  // Календарь на текущий месяц
-  const [calendarMonth, setCalendarMonth] = useState<MoonDay[]>([]);
-  
   // Mounted state для hydration
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Генерация календаря при смене месяца
-  useEffect(() => {
-    setCalendarMonth(generateCalendarMonth(currentYear, currentMonth));
-  }, [currentYear, currentMonth]);
 
   // Фильтрация культур по поиску
   const filteredCultures = cultures.filter(c => 
@@ -216,10 +177,6 @@ export default function GardenManager() {
     }
   };
 
-  // Получить текущий день
-  const today = new Date().toISOString().split('T')[0];
-  const todayData = calendarMonth.find(d => d.date === today);
-
   // Навигационное меню
   const NavMenu = ({ vertical = false }: { vertical?: boolean }) => (
     <nav className={`flex ${vertical ? 'flex-col gap-1' : 'gap-1'}`}>
@@ -230,14 +187,6 @@ export default function GardenManager() {
       >
         <Home className="h-5 w-5" />
         <span>Главная</span>
-      </Button>
-      <Button
-        variant={section === 'calendar' ? 'default' : 'ghost'}
-        className={`justify-start gap-3 ${vertical ? 'w-full' : ''}`}
-        onClick={() => navigate('calendar')}
-      >
-        <Calendar className="h-5 w-5" />
-        <span>Календарь</span>
       </Button>
       <Button
         variant={section === 'catalog' ? 'default' : 'ghost'}
@@ -292,50 +241,13 @@ export default function GardenManager() {
         </Card>
       )}
 
-      {/* Сегодня в календаре */}
-      {todayData && (
-        <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Сегодня {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
-              <span className="text-5xl">{MOON_PHASES[todayData.moonPhase]}</span>
-              <div>
-                <p className="font-semibold text-lg">{todayData.moonPhaseName}</p>
-                <p className="text-sm text-muted-foreground">
-                  {todayData.zodiacSign} • {todayData.zodiacElement}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {todayData.isGoodForSowing && <Badge variant="secondary"><Sprout className="h-3 w-3 mr-1" /> Посев</Badge>}
-              {todayData.isGoodForPlanting && <Badge variant="secondary"><Leaf className="h-3 w-3 mr-1" /> Посадка</Badge>}
-              {todayData.isGoodForTransplanting && <Badge variant="secondary"><Apple className="h-3 w-3 mr-1" /> Пересадка</Badge>}
-              {todayData.isGoodForWatering && <Badge variant="secondary"><Droplets className="h-3 w-3 mr-1" /> Полив</Badge>}
-              {todayData.isGoodForFertilizing && <Badge variant="secondary"><Sun className="h-3 w-3 mr-1" /> Подкормка</Badge>}
-              {todayData.isGoodForPruning && <Badge variant="secondary"><Scissors className="h-3 w-3 mr-1" /> Обрезка</Badge>}
-              {todayData.isGoodForHarvesting && <Badge variant="secondary"><Moon className="h-3 w-3 mr-1" /> Сбор урожая</Badge>}
-              {todayData.isGoodForSoilWork && <Badge variant="secondary"><Shovel className="h-3 w-3 mr-1" /> Почва</Badge>}
-              {todayData.isForbidden && <Badge variant="destructive">Запрещённый день</Badge>}
-            </div>
-            {todayData.recommendation && (
-              <p className="mt-3 text-sm">{todayData.recommendation}</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Быстрые разделы */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" onClick={() => navigate('calendar')}>
+        <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" onClick={() => navigate('articles')}>
           <CardContent className="p-6 text-center">
-            <Calendar className="h-12 w-12 mx-auto mb-3 text-primary" />
-            <h3 className="font-semibold text-lg">Лунный календарь</h3>
-            <p className="text-sm text-muted-foreground">Фазы луны и рекомендации</p>
+            <FlaskConical className="h-12 w-12 mx-auto mb-3 text-primary" />
+            <h3 className="font-semibold text-lg">Удобрения и препараты</h3>
+            <p className="text-sm text-muted-foreground">Нормы и совместимость</p>
           </CardContent>
         </Card>
 
@@ -400,158 +312,6 @@ export default function GardenManager() {
             </Card>
           ))}
         </div>
-      </div>
-    </div>
-  );
-
-  // Лунный календарь
-  const CalendarPage = () => (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        <Calendar className="h-6 w-6" />
-        Лунный посевной календарь
-      </h1>
-
-      {/* Выбор месяца */}
-      <div className="flex items-center justify-between gap-4">
-        <Button variant="outline" size="icon" onClick={() => {
-          if (currentMonth === 1) {
-            setCurrentMonth(12);
-            setCurrentYear(currentYear - 1);
-          } else {
-            setCurrentMonth(currentMonth - 1);
-          }
-        }}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        
-        <div className="text-center">
-          <h2 className="text-lg font-semibold">{MONTHS[currentMonth - 1]} {currentYear}</h2>
-        </div>
-        
-        <Button variant="outline" size="icon" onClick={() => {
-          if (currentMonth === 12) {
-            setCurrentMonth(1);
-            setCurrentYear(currentYear + 1);
-          } else {
-            setCurrentMonth(currentMonth + 1);
-          }
-        }}>
-          <ChevronLeft className="h-4 w-4 rotate-180" />
-        </Button>
-      </div>
-
-      {/* Быстрый выбор месяца */}
-      <div className="flex flex-wrap gap-1 justify-center">
-        {MONTHS.map((m, i) => (
-          <Button
-            key={i}
-            variant={currentMonth === i + 1 ? 'default' : 'outline'}
-            size="sm"
-            className="text-xs px-3"
-            onClick={() => setCurrentMonth(i + 1)}
-          >
-            {m.slice(0, 3)}
-          </Button>
-        ))}
-      </div>
-
-      {/* Календарь */}
-      <Card>
-        <CardContent className="p-3 lg:p-6">
-          {/* Дни недели */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => (
-              <div key={d} className="text-center text-xs lg:text-sm font-semibold text-muted-foreground p-2">
-                {d}
-              </div>
-            ))}
-          </div>
-          
-          {/* Дни */}
-          <div className="grid grid-cols-7 gap-1 lg:gap-2">
-            {/* Пустые ячейки для выравнивания */}
-            {Array.from({ length: new Date(currentYear, currentMonth - 1, 1).getDay() || 7 }).map((_, i) => (
-              <div key={`empty-${i}`} className="aspect-square" />
-            ))}
-            
-            {calendarMonth.map(day => {
-              const isToday = day.date === today;
-              return (
-                <div
-                  key={day.date}
-                  className={`aspect-square p-1 lg:p-2 rounded-lg text-center cursor-pointer transition-all
-                    ${isToday ? 'ring-2 ring-primary bg-primary/10' : ''}
-                    ${day.isForbidden ? 'bg-destructive/20' : ''}
-                    ${day.isGoodForSowing || day.isGoodForPlanting ? 'bg-primary/20' : ''}
-                    hover:bg-accent hover:scale-105
-                  `}
-                  title={`${day.moonPhaseName}\n${day.zodiacSign}\n${day.recommendation || ''}`}
-                >
-                  <div className="text-xs lg:text-sm font-medium">{day.day}</div>
-                  <div className="text-lg lg:text-2xl">{MOON_PHASES[day.moonPhase]}</div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Легенда и рекомендации - в 2 колонки на PC */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Легенда */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Легенда</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-primary/20" />
-                <span>Благоприятно</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-destructive/20" />
-                <span>Запрещено</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded ring-2 ring-primary" />
-                <span>Сегодня</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🌑🌒🌓🌔🌕🌖🌗🌘</span>
-                <span>Фазы</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Рекомендации по фазам */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Рекомендации по фазам</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🌑</span>
-                <span>Новолуние — отдых</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🌒🌓🌔</span>
-                <span>Растущая — посев</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🌕</span>
-                <span>Полнолуние — сбор</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🌖🌗🌘</span>
-                <span>Убывающая — корнеплоды</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
@@ -967,17 +727,18 @@ export default function GardenManager() {
             <CardTitle className="text-lg">Разработчик</CardTitle>
             <CardDescription>Связаться с разработчиком</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <a
-              href="tg://resolve?domain=gettocode"
+              href="https://t.me/gettocode"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between p-3 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">👨‍💻</span>
+                <MessageCircle className="h-6 w-6 text-primary" />
                 <div>
-                  <p className="font-semibold">Telegram</p>                  
+                  <p className="font-semibold">@gettocode</p>
+                  <p className="text-xs text-muted-foreground">Telegram-канал</p>
                 </div>
               </div>
               <ExternalLink className="h-5 w-5 text-muted-foreground" />
@@ -1063,8 +824,6 @@ export default function GardenManager() {
     switch (section) {
       case 'home':
         return <HomePage />;
-      case 'calendar':
-        return <CalendarPage />;
       case 'catalog':
         return <CatalogPage />;
       case 'articles':
@@ -1180,15 +939,6 @@ export default function GardenManager() {
             >
               <Home className="h-5 w-5" />
               <span className="text-xs">Главная</span>
-            </Button>
-            <Button
-              variant={section === 'calendar' ? 'default' : 'ghost'}
-              size="sm"
-              className="flex-col gap-1 h-auto py-2 px-3"
-              onClick={() => navigate('calendar')}
-            >
-              <Calendar className="h-5 w-5" />
-              <span className="text-xs">Календарь</span>
             </Button>
             <Button
               variant={section === 'catalog' ? 'default' : 'ghost'}
