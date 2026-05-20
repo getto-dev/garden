@@ -1,7 +1,7 @@
 {
   "name": "Садовод",
   "short_name": "Садовод",
-  "description": "Справочник садовода: лунный календарь, каталог культур, советы по уходу",
+  "description": "Справочник садовода: каталог культур, удобрения, советы по уходу",
   "start_url": "/garden/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
@@ -94,17 +94,17 @@
   ],
   "shortcuts": [
     {
-      "name": "Лунный календарь",
-      "short_name": "Календарь",
-      "description": "Открыть лунный посевной календарь",
-      "url": "/garden/?section=calendar",
-      "icons": [{ "src": "/garden/icons/icon-96x96.png", "sizes": "96x96" }]
-    },
-    {
       "name": "Каталог культур",
       "short_name": "Каталог",
       "description": "Открыть каталог растений",
       "url": "/garden/?section=catalog",
+      "icons": [{ "src": "/garden/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Статьи",
+      "short_name": "Статьи",
+      "description": "Полезные статьи и руководства",
+      "url": "/garden/?section=articles",
       "icons": [{ "src": "/garden/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ],
